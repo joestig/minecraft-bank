@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101713">
+  <title>Bank</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="app.js"></script>
+</head>
+
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+  <main id="auth-screen" class="auth-wrap">
+    <section class="auth-card">
+      <div class="brand-mark">◆</div>
+      <p class="eyebrow">PRIVATE PLAYER ECONOMY</p>
+      <h1>Bank</h1>
+      <p class="muted auth-subtitle">A better way to keep track of what's yours.</p>
+      <div class="auth-tabs"><button class="auth-tab active" data-auth-tab="login">Log in</button><button
+          class="auth-tab" data-auth-tab="signup">Create account</button></div>
+      <form id="login-form" class="auth-form">
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com"
+            required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password"
+            placeholder="Your password" required></label>
+        <button class="btn btn-primary full" type="submit">Log in <span>→</span></button>
+      </form>
+      <form id="signup-form" class="auth-form hidden">
+        <label>Username<input name="username" minlength="3" maxlength="20" pattern="[A-Za-z0-9_]+"
+            placeholder="Minecraft username" required></label>
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="you@example.com"
+            required></label>
+        <label>Password<input name="password" type="password" minlength="8" autocomplete="new-password"
+            placeholder="At least 8 characters" required></label>
+        <button class="btn btn-primary full" type="submit">Create account <span>→</span></button>
+      </form>
+      <p id="auth-message" class="form-message" aria-live="polite"></p>
+      <p class="tiny muted auth-foot">Accounts are private. Your balance is controlled by the bank database, not your
+        browser.</p>
+    </section>
+  </main>
+
+  <div id="app" class="app-shell hidden">
+    <aside class="sidebar">
+      <a class="brand" href="#overview"><span class="brand-mark small">◆</span><span>Bank<small>PLAYER
+            ECONOMY</small></span></a>
+      <div class="side-label">MENU</div>
+      <nav class="side-nav">
+        <button class="nav-link active" data-page="overview"><span>▦</span> Overview</button>
+        <button class="nav-link" data-page="notes"><span>▤</span> My notes</button>
+        <button class="nav-link" data-page="transfer"><span>↗</span> Send notes</button>
+        <button class="nav-link" data-page="casino"><span>♠</span> The casino <i class="nav-pill">NEW</i></button>
+        <button class="nav-link" data-page="ledger"><span>◷</span> Public ledger</button>
+        <button class="nav-link admin-only hidden" data-page="admin"><span>⚙</span> Administration</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="connection"><span class="online-dot"></span><span>Bank services connected</span></div><button
+          id="logout-btn" class="logout-btn">↪ &nbsp; Log out</button>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow" id="page-kicker">YOUR ACCOUNT</p>
+          <h2 id="page-title">Overview</h2>
+        </div>
+        <div class="top-user">
+          <div class="avatar" id="user-avatar">?</div>
+          <div><strong id="top-username">Player</strong><small id="top-role">PLAYER ACCOUNT</small></div>
+        </div>
+      </header>
+      <main class="content">
+        <section id="page-overview" class="page active">
+          <div class="welcome-row">
+            <div>
+              <p class="muted">Good to see you, <strong id="welcome-name">Player</strong>.</p>
+              <h1>Your money, <em>your move.</em></h1>
+            </div><span class="date-chip" id="today-label"></span>
+          </div>
+          <div class="stats-grid">
+            <article class="stat-card balance-card">
+              <div class="stat-top"><span>AVAILABLE BALANCE</span><span class="stat-icon">◆</span></div>
+              <div class="big-number"><span id="balance-total">—</span><small>notes</small></div>
+              <p class="stat-foot">1 note = 1 diamond</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>ACTIVE NOTES</span><span class="stat-icon">▤</span></div>
+              <div class="stat-number" id="note-count">—</div>
+              <p class="stat-foot">Individual authenticated notes</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>ACCOUNT STATUS</span><span class="stat-icon green">●</span></div>
+              <div class="status-line"><span class="status-dot"></span> In good standing</div>
+              <p class="stat-foot">Your account is active</p>
+            </article>
+          </div>
+          <div class="two-col overview-grid">
+            <article class="panel">
+              <div class="panel-head">
+                <div>
+                  <p class="eyebrow">LATEST ACTIVITY</p>
+                  <h3>Recent transactions</h3>
+                </div><button class="text-btn" data-go="ledger">View all →</button>
+              </div>
+              <div id="recent-ledger" class="activity-list">
+                <div class="empty-state">Loading activity…</div>
+              </div>
+            </article>
+            <article class="panel quick-panel">
+              <p class="eyebrow">QUICK ACTIONS</p>
+              <h3>What would you like to do?</h3><button class="action-row" data-go="transfer"><span
+                  class="action-icon">↗</span><span><b>Send notes</b><small>Pay another player</small></span><span
+                  class="action-arrow">→</span></button><button class="action-row" data-go="notes"><span
+                  class="action-icon">⇄</span><span><b>Manage notes</b><small>Split or merge
+                    denominations</small></span><span class="action-arrow">→</span></button><button class="action-row"
+                data-go="casino"><span class="action-icon">♠</span><span><b>Visit the casino</b><small>Play against the
+                    bank</small></span><span class="action-arrow">→</span></button>
+            </article>
+          </div>
+          <div class="notice"><span>ⓘ</span>
+            <p><strong>Remember:</strong> Notes are digital records of ownership. A Minecraft book is a physical
+              receipt, not proof of ownership. Always verify a note through the bank.</p>
+          </div>
+        </section>
+
+        <section id="page-notes" class="page">
+          <div class="section-intro">
+            <div>
+              <p class="muted">Your authenticated currency</p>
+              <h1>My notes</h1>
+              <p class="muted">Split larger notes into smaller ones, or combine notes into a larger denomination.</p>
+            </div>
+            <div class="total-chip"><span id="notes-page-total">0</span><small> total notes</small></div>
+          </div>
+          <div class="note-tools">
+            <div class="search-box">⌕ <input id="note-search" placeholder="Search note UUID…"></div><button
+              class="btn btn-secondary" id="refresh-notes">↻ Refresh</button>
+          </div>
+          <div id="notes-grid" class="notes-grid">
+            <div class="empty-state">Loading your notes…</div>
+          </div>
+          <div class="two-col manage-grid">
+            <article class="panel">
+              <p class="eyebrow">BREAK IT DOWN</p>
+              <h3>Split a note</h3>
+              <p class="muted small-copy">A note is replaced by individual 1-note child records. Total value stays the
+                same.</p>
+              <form id="split-form" class="stack-form"><label>Choose a note<select name="note_id" id="split-note-select"
+                    required>
+                    <option value="">Select a note…</option>
+                  </select></label><label>Message<input name="message" maxlength="180"
+                    placeholder="Why are you splitting it?" required></label><button class="btn btn-primary"
+                  type="submit">Split note</button></form>
+            </article>
+            <article class="panel">
+              <p class="eyebrow">BUILD IT UP</p>
+              <h3>Merge notes</h3>
+              <p class="muted small-copy">Select at least two notes you own to replace them with one note of equal total
+                value.</p>
+              <form id="merge-form" class="stack-form">
+                <div id="merge-note-list" class="merge-list"><span class="muted small-copy">Loading notes…</span></div>
+                <label>Message<input name="message" maxlength="180" placeholder="Why are you merging them?"
+                    required></label><button class="btn btn-primary" type="submit">Merge selected notes</button>
+              </form>
+            </article>
+          </div>
+        </section>
+
+        <section id="page-transfer" class="page">
+          <div class="section-intro">
+            <div>
+              <p class="muted">Move value securely</p>
+              <h1>Send notes</h1>
+              <p class="muted">Send an amount, not a specific denomination. The bank will split notes automatically if
+                needed.</p>
+            </div>
+          </div>
+          <div class="transfer-layout">
+            <article class="panel transfer-panel">
+              <div class="transfer-balance"><span>YOUR AVAILABLE BALANCE</span><strong id="transfer-balance">—
+                  notes</strong></div>
+              <form id="transfer-form" class="stack-form"><label>Recipient username<input name="recipient"
+                    autocomplete="off" placeholder="Minecraft username" required></label><label>Amount<input
+                    name="amount" type="number" min="1" step="1" placeholder="0" required></label><label>Payment message
+                  <span class="required-label">REQUIRED</span><textarea name="message" rows="3" maxlength="180"
+                    placeholder="What's this payment for?" required></textarea></label><button
+                  class="btn btn-primary full" type="submit">Review & send <span>→</span></button></form>
+              <p class="tiny muted">Transfers are final once confirmed. Double-check the recipient.</p>
+            </article>
+            <aside class="panel info-panel">
+              <div class="info-icon">↗</div>
+              <h3>Simple. Secure. Recorded.</h3>
+              <p class="muted">You can send any whole-number amount up to your available balance. If you send 3 notes
+                from a 20-note, the bank automatically splits that 20 into smaller notes and transfers 3.</p>
+              <div class="mini-rule"></div>
+              <div class="info-stat"><span>Transfer fee</span><strong>None</strong></div>
+              <div class="info-stat"><span>Confirmation</span><strong>Instant</strong></div>
+              <div class="info-stat"><span>Public receipt</span><strong>Always</strong></div>
+            </aside>
+          </div>
+        </section>
+
+        <section id="page-casino" class="page">
+          <div class="casino-hero">
+            <div>
+              <p class="eyebrow">HOUSE GAMES · BANK-OPERATED</p>
+              <h1>Feeling lucky?</h1>
+              <p>Play for notes against the bank. Every wager and payout is recorded.</p>
+            </div>
+            <div class="casino-balance"><span>YOUR BALANCE</span><strong
+                id="casino-balance">—</strong><small>notes</small></div>
+          </div>
+          <div class="casino-warning">ⓘ <span>For entertainment within this private game economy. No real-money
+              deposits, withdrawals, or cash-outs.</span></div>
+          <div class="panel" style="margin-bottom:14px"><label class="stack-form" style="margin:0;max-width:520px">Bet
+              message <input id="casino-message" maxlength="180" placeholder="What is this bet for? (required)"
+                required></label></div>
+          <div class="games-grid">
+            <article class="game-card">
+              <div class="game-art dice-art">⚄</div>
+              <div class="game-content">
+                <div class="game-title">
+                  <div>
+                    <p class="eyebrow">01 · PICK A NUMBER</p>
+                    <h3>Dice</h3>
+                  </div><span class="house-tag">HOUSE</span>
+                </div>
+                <p class="muted">Choose 1–6. Hit your number to win 5× your wager.</p>
+                <form class="game-form" data-game="dice"><label>Pick a number<select name="choice">
+                      <option>1</option>
+                      <option>2</option>
+                      <option>3</option>
+                      <option>4</option>
+                      <option>5</option>
+                      <option>6</option>
+                    </select></label><label>Wager<input name="bet" type="number" min="1" step="1" placeholder="Notes"
+                      required></label><button class="btn btn-primary full" type="submit">Roll dice →</button></form>
+                <div class="game-result" aria-live="polite"></div>
+              </div>
+            </article>
+            <article class="game-card">
+              <div class="game-art roulette-art">◉</div>
+              <div class="game-content">
+                <div class="game-title">
+                  <div>
+                    <p class="eyebrow">02 · RED OR BLACK</p>
+                    <h3>Roulette</h3>
+                  </div><span class="house-tag">HOUSE</span>
+                </div>
+                <p class="muted">Pick red or black. Green zero belongs to the house. Win 2×.</p>
+                <form class="game-form" data-game="roulette"><label>Color<select name="choice">
+                      <option value="red">Red</option>
+                      <option value="black">Black</option>
+                    </select></label><label>Wager<input name="bet" type="number" min="1" step="1" placeholder="Notes"
+                      required></label><button class="btn btn-primary full" type="submit">Spin wheel →</button></form>
+                <div class="game-result" aria-live="polite"></div>
+              </div>
+            </article>
+            <article class="game-card">
+              <div class="game-art slots-art">▥</div>
+              <div class="game-content">
+                <div class="game-title">
+                  <div>
+                    <p class="eyebrow">03 · MATCH THE REELS</p>
+                    <h3>Slots</h3>
+                  </div><span class="house-tag">HOUSE</span>
+                </div>
+                <p class="muted">Three matching symbols pay 7×. Two matching symbols pay 1×.</p>
+                <form class="game-form" data-game="slots">
+                  <div class="slot-preview">◆　●　✦</div><label>Wager<input name="bet" type="number" min="1" step="1"
+                      placeholder="Notes" required></label><button class="btn btn-primary full" type="submit">Spin slots
+                    →</button>
+                </form>
+                <div class="game-result" aria-live="polite"></div>
+              </div>
+            </article>
+            <article class="game-card">
+              <div class="game-art blackjack-art">♠</div>
+              <div class="game-content">
+                <div class="game-title">
+                  <div>
+                    <p class="eyebrow">04 · QUICK ROUND</p>
+                    <h3>Blackjack</h3>
+                  </div><span class="house-tag">HOUSE</span>
+                </div>
+                <p class="muted">A quick simulated hand against the dealer. Beat the dealer to win 2×; a tie returns
+                  your wager.</p>
+                <form class="game-form" data-game="blackjack"><label>Wager<input name="bet" type="number" min="1"
+                      step="1" placeholder="Notes" required></label><button class="btn btn-primary full"
+                    type="submit">Deal cards →</button></form>
+                <div class="game-result" aria-live="polite"></div>
+              </div>
+            </article>
+          </div>
+          <article class="panel casino-history">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">YOUR RECENT ROUNDS</p>
+                <h3>Game history</h3>
+              </div>
+            </div>
+            <div id="casino-history-list" class="activity-list">
+              <div class="empty-state">Loading games…</div>
+            </div>
+          </article>
+        </section>
+
+        <section id="page-ledger" class="page">
+          <div class="section-intro">
+            <div>
+              <p class="muted">A transparent record of the economy</p>
+              <h1>Public ledger</h1>
+              <p class="muted">Every mint, split, merge, transfer, and casino result is recorded here.</p>
+            </div><button class="btn btn-secondary" id="refresh-ledger">↻ Refresh</button>
+          </div>
+          <article class="panel ledger-panel">
+            <div class="ledger-filters">
+              <div class="search-box">⌕ <input id="ledger-search" placeholder="Search usernames or messages…"></div>
+              <select id="ledger-filter">
+                <option value="all">All activity</option>
+                <option value="mint">Mints</option>
+                <option value="transfer">Transfers</option>
+                <option value="split">Splits</option>
+                <option value="merge">Merges</option>
+                <option value="casino">Casino</option>
+              </select>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ACTIVITY</th>
+                    <th>FROM / PLAYER</th>
+                    <th>TO / RESULT</th>
+                    <th>AMOUNT</th>
+                    <th>MESSAGE</th>
+                    <th>DATE</th>
+                  </tr>
+                </thead>
+                <tbody id="ledger-body">
+                  <tr>
+                    <td colspan="6" class="empty-state">Loading ledger…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="ledger-foot" id="ledger-count">Showing latest activity</div>
+          </article>
+        </section>
+
+        <section id="page-admin" class="page">
+          <div class="section-intro">
+            <div>
+              <p class="muted">Restricted access</p>
+              <h1>Administration</h1>
+              <p class="muted">Manage issuance and monitor the bank.</p>
+            </div><span class="admin-badge">◆ ADMINISTRATOR</span>
+          </div>
+          <div class="stats-grid admin-stats">
+            <article class="stat-card">
+              <div class="stat-top"><span>TOTAL CURRENCY</span></div>
+              <div class="stat-number" id="admin-supply">—</div>
+              <p class="stat-foot">Active notes in circulation</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>PLAYER ACCOUNTS</span></div>
+              <div class="stat-number" id="admin-users">—</div>
+              <p class="stat-foot">Registered accounts</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span>HOUSE RESERVE</span></div>
+              <div class="stat-number" id="admin-house">—</div>
+              <p class="stat-foot">Available casino funds</p>
+            </article>
+          </div>
+          <div class="two-col admin-grid">
+            <article class="panel">
+              <p class="eyebrow">ISSUE CURRENCY</p>
+              <h3>Mint new notes</h3>
+              <p class="muted small-copy">Only admins can create currency. Confirm the diamonds have been deposited
+                before minting.</p>
+              <form id="mint-form" class="stack-form"><label>Player username<input name="username"
+                    placeholder="Recipient username" required></label><label>Amount<input name="amount" type="number"
+                    min="1" step="1" placeholder="Number of diamonds" required></label><label>Issuance message<input
+                    name="message" maxlength="180" placeholder="Deposit verified — 10 diamonds" required></label><button
+                  class="btn btn-primary" type="submit">Mint notes</button></form>
+            </article>
+            <article class="panel">
+              <p class="eyebrow">BANK OVERSIGHT</p>
+              <h3>System controls</h3>
+              <div class="admin-control">
+                <div><b>Casino operations</b><small>House-funded games and payouts</small></div><span
+                  class="status-live">ACTIVE</span>
+              </div>
+              <div class="admin-control">
+                <div><b>Public ledger</b><small>Transaction visibility</small></div><span
+                  class="status-live">PUBLIC</span>
+              </div>
+              <div class="admin-control">
+                <div><b>Currency issuance</b><small>Administrator-only</small></div><span
+                  class="status-live">RESTRICTED</span>
+              </div>
+              <p class="tiny muted">Account freezes and note revocations should be handled through a reviewed
+                administrative process; they are intentionally not exposed as one-click destructive actions.</p>
+            </article>
+          </div>
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="eyebrow">LATEST SYSTEM ACTIVITY</p>
+                <h3>All transactions</h3>
+              </div><button class="text-btn" data-go="ledger">Open ledger →</button>
+            </div>
+            <div id="admin-activity" class="activity-list">
+              <div class="empty-state">Loading…</div>
+            </div>
+          </article>
+        </section>
+      </main>
+      <footer class="footer"><span>DIAMOND BANK <span class="footer-dot">·</span> PRIVATE PLAYER ECONOMY</span><span>1
+          NOTE = 1 DIAMOND</span></footer>
+    </div>
+  </div>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <dialog id="confirm-dialog" class="confirm-dialog">
+    <form method="dialog">
+      <div class="dialog-icon">↗</div>
+      <p class="eyebrow">CONFIRM TRANSFER</p>
+      <h2>Send these notes?</h2>
+      <p id="confirm-copy" class="muted"></p>
+      <div class="dialog-actions"><button class="btn btn-secondary" value="cancel">Cancel</button><button
+          class="btn btn-primary" id="confirm-send" value="confirm">Confirm & send</button></div>
+    </form>
+  </dialog>
+</body>
+
+</html>
